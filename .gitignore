@@ -37,6 +37,6 @@ nosetests.xml
 
 venv
 app.db
-microblog.log*
+tracker.log*
 
 .idea
