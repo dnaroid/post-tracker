@@ -29,6 +29,8 @@ def index():
         db.session.add(track)
         db.session.commit()
         flash('Track added')
+
+        print('-------current_app.config', current_app.config)
         send_email('[Tracker] track added',
                    sender=current_app.config['ADMINS'][0], recipients=[current_user.email],
                    text_body=f'Track {track.number} {track.title} added',
