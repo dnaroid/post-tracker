@@ -1,5 +1,5 @@
 from app import create_app, db
-from app.models import User, Track, Event, Task
+from app.models import Event, Task, Track, User
 
 app = create_app()
 

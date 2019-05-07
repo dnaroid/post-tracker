@@ -10,7 +10,6 @@ from app.helpers.event_helper import parse_events
 from app.main import bp
 from app.main.forms import EditProfileForm, TrackForm
 from app.models import Event, Track, User
-from tracker import app
 
 
 @bp.before_app_request
@@ -31,7 +30,7 @@ def index():
         db.session.commit()
         flash('Track added')
         send_email('[Tracker] track added',
-                   sender=app.config['ADMINS'][0], recipients=[current_user.email],
+                   sender=current_app.config['ADMINS'][0], recipients=[current_user.email],
                    text_body=f'Track {track.number} {track.title} added',
                    html_body=f'Track {track.number} {track.title} added')
         return redirect(url_for('main.index'))
