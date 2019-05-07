@@ -5,10 +5,12 @@ from flask import current_app, flash, redirect, render_template, request, url_fo
 from flask_login import current_user, login_required
 
 from app import db
+from app.email import send_email
 from app.helpers.event_helper import parse_events
 from app.main import bp
 from app.main.forms import EditProfileForm, TrackForm
 from app.models import Event, Track, User
+from tracker import app
 
 
 @bp.before_app_request
@@ -27,7 +29,12 @@ def index():
         track = Track(number=form.number.data, title=form.title.data, owner=current_user)
         db.session.add(track)
         db.session.commit()
-        flash('Your post is now live!')
+        flash('Track added')
+        send_email('[Tracker] test',
+                   sender=app.config['ADMINS'][0], recipients=[current_user.email],
+                   text_body='test',
+                   html_body='test',
+                   sync=True)
         return redirect(url_for('main.index'))
     page = request.args.get('page', 1, type=int)
     tracks = current_user.tracks.paginate(

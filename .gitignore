@@ -41,3 +41,4 @@ tracker.log*
 
 .idea
 .vscode
+.secret
