@@ -41,7 +41,7 @@ def export_tasks(user_id):
             _set_task_progress(100 * i // total_tracks)
 
         send_email('[Tracker] Your blog posts',
-                   sender=app.config['ADMINS'][0], recipients=[user.email],
+                   sender=app.config['ADMIN'], recipients=[user.email],
                    text_body=render_template('email/export_posts.txt', user=user),
                    html_body=render_template('email/export_posts.html',
                                              user=user),

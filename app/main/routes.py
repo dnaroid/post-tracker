@@ -30,9 +30,10 @@ def index():
         db.session.commit()
         flash('Track added')
         send_email('[Tracker] track added',
-                   sender=current_app.config['ADMINS'][0], recipients=[current_user.email],
+                   sender=current_app.config['ADMIN'], recipients=[current_user.email],
                    text_body=f'Track {track.number} {track.title} added',
-                   html_body=f'Track {track.number} {track.title} added')
+                   html_body=f'Track {track.number} {track.title} added',
+                   sync=False)
         return redirect(url_for('main.index'))
     page = request.args.get('page', 1, type=int)
     tracks = current_user.tracks.paginate(
