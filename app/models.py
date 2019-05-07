@@ -9,7 +9,7 @@ import redis
 import rq
 from flask import current_app, url_for
 from flask_login import UserMixin
-from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 from app import db, login
 
@@ -50,7 +50,7 @@ class User(UserMixin, PaginatedAPIMixin, db.Model):
     tasks = db.relationship('Task', backref='user', lazy='dynamic')
 
     def __repr__(self):
-        return '<User {}>'.format(self.username)
+        return f'<User {self.username}>'
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -149,10 +149,12 @@ class Track(db.Model):
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     title = db.Column(db.String(200))
+    image_url = db.Column(db.String(200))
     events = db.relationship('Event', backref='track', lazy='dynamic')
+    is_archived = db.Column(db.Integer, default=0)
 
     def __repr__(self):
-        return '<Track {0} {1}>'.format(self.number, self.title)
+        return f'<Track {self.number} {self.title}>'
 
 
 class Event(db.Model):
@@ -163,7 +165,7 @@ class Event(db.Model):
     title = db.Column(db.String(200))
 
     def __repr__(self):
-        return '<Event {0} {1}>'.format(self.timestamp, self.title)
+        return f'<Event {self.timestamp} {self.title} >'
 
 
 class Task(db.Model):

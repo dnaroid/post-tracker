@@ -1,14 +1,14 @@
 from datetime import datetime
 
 import requests
-from flask import render_template, flash, redirect, url_for, request, current_app
+from flask import current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from app import db
 from app.helpers.event_helper import parse_events
 from app.main import bp
 from app.main.forms import EditProfileForm, TrackForm
-from app.models import User, Track, Event
+from app.models import Event, Track, User
 
 
 @bp.before_app_request

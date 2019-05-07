@@ -2,11 +2,18 @@
 {% import 'bootstrap/wtf.html' as wtf %}
 
 {% block app_content %}
-    {% include '_track.html' %}
-    {{ events }}
-    {% if form %}
-        {{ wtf.quick_form(form) }}
-        <br>
-    {% endif %}
-
+  <table class="table">
+    <tbody>
+      {% for e in events %}
+        <tr>
+          <td>{{ e.date.strftime('%d.%m.%Y') }}</td>
+          <td>{{ e.event }}</td>
+          <td>{{ e.place }}</td>
+        </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% if form %}
+    {{ wtf.quick_form(form) }}
+  {% endif %}
 {% endblock %}
