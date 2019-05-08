@@ -25,6 +25,7 @@ bootstrap = Bootstrap()
 def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
+    print(app.config)
 
     db.init_app(app)
     migrate.init_app(app, db)
