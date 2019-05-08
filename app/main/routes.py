@@ -29,12 +29,15 @@ def index():
         db.session.add(track)
         db.session.commit()
         flash('Track added')
-
         print('-------current_app.config', current_app.config)
+        print('-------current_app.config', current_app.config['MAIL_SERVER'])
+        print('-------current_app.config', current_app.config['MAIL_USERNAME'])
+        print('-------current_app.config', current_app.config['ADMINS'])
         send_email('[Tracker] track added',
-                   sender=current_app.config['ADMINS'][0], recipients=[current_user.email],
+                   sender='dnaroid.pythonanywhere@gmail.com', recipients=[current_user.email],
                    text_body=f'Track {track.number} {track.title} added',
-                   html_body=f'Track {track.number} {track.title} added')
+                   html_body=f'Track {track.number} {track.title} added',
+                   sync=False)
         return redirect(url_for('main.index'))
     page = request.args.get('page', 1, type=int)
     tracks = current_user.tracks.paginate(
