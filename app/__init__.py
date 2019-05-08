@@ -79,7 +79,6 @@ def create_app(config_class=Config):
 
         app.logger.setLevel(logging.INFO)
         app.logger.info('Tracker startup')
-        app.logger.info(config_class)
         app.logger.info(app.config)
 
     return app
