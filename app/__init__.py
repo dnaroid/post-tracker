@@ -5,6 +5,7 @@ from logging.handlers import RotatingFileHandler, SMTPHandler
 import rq
 from flask import Flask
 from flask_bootstrap import Bootstrap
+from flask_cors import CORS
 from flask_login import LoginManager
 from flask_mail import Mail
 from flask_migrate import Migrate
@@ -24,6 +25,8 @@ bootstrap = Bootstrap()
 
 def create_app(config_class=Config):
     app = Flask(__name__)
+    CORS(app)
+
     app.config.from_object(config_class)
 
     db.init_app(app)
@@ -39,6 +42,9 @@ def create_app(config_class=Config):
 
     from app.auth import bp as auth_bp
     app.register_blueprint(auth_bp, url_prefix='/auth')
+
+    from app.rest import bp as rest_bp
+    app.register_blueprint(rest_bp)
 
     from app.main import bp as main_bp
     app.register_blueprint(main_bp)
@@ -79,8 +85,6 @@ def create_app(config_class=Config):
 
         app.logger.setLevel(logging.INFO)
         app.logger.info('Tracker startup')
-        app.logger.info(config_class)
-        app.logger.info(app.config)
 
     return app
 

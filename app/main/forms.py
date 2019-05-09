@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField, TextAreaField
-from wtforms.validators import ValidationError, DataRequired, Length
+from wtforms.validators import DataRequired, Length, Optional, Regexp, URL, ValidationError
 
 from app.models import User
 
@@ -21,7 +21,10 @@ class EditProfileForm(FlaskForm):
 
 
 class TrackForm(FlaskForm):
-    number = StringField('Track Number', validators=[DataRequired()])
+    number = StringField('Track Number',
+                         validators=[DataRequired(), Regexp(regex=r'[A-Z]{2}\d{9}[A-Z]{2}',
+                                                            message='Invalid track format')])
+    image_url = StringField('Image URL', validators=[URL(), Optional()])
     title = TextAreaField('Description', validators=[DataRequired()])
     submit = SubmitField('Submit')
 

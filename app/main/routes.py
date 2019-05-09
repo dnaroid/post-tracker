@@ -5,7 +5,6 @@ from flask import current_app, flash, redirect, render_template, request, url_fo
 from flask_login import current_user, login_required
 
 from app import db
-from app.email import send_email
 from app.helpers.event_helper import parse_events
 from app.main import bp
 from app.main.forms import EditProfileForm, TrackForm
@@ -29,15 +28,6 @@ def index():
         db.session.add(track)
         db.session.commit()
         flash('Track added')
-        print('-------current_app.config', current_app.config)
-        print('-------current_app.config', current_app.config['MAIL_SERVER'])
-        print('-------current_app.config', current_app.config['MAIL_USERNAME'])
-        print('-------current_app.config', current_app.config['ADMINS'])
-        send_email('[Tracker] track added',
-                   sender='dnaroid.pythonanywhere@gmail.com', recipients=[current_user.email],
-                   text_body=f'Track {track.number} {track.title} added',
-                   html_body=f'Track {track.number} {track.title} added',
-                   sync=False)
         return redirect(url_for('main.index'))
     page = request.args.get('page', 1, type=int)
     tracks = current_user.tracks.paginate(
