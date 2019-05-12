@@ -1,34 +1,29 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from hashlib import md5
 
-import jwt
 import redis
 import rq
-from flask import current_app, url_for
+from flask import current_app
 from flask_login import UserMixin
+from itsdangerous import (BadSignature, SignatureExpired, TimedJSONWebSignatureSerializer as Serializer)
 
-from app import db, login
+from app import bcrypt, db
 
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64), index=True, unique=True)
     email = db.Column(db.String(120), index=True, unique=True)
-    password_hash = db.Column(db.String(128))
+    password = db.Column(db.String(128))
     tracks = db.relationship('Track', backref='owner', lazy='dynamic')
-    last_seen = db.Column(db.DateTime, default=datetime.utcnow)
-    token = db.Column(db.String(32), index=True, unique=True)
-    token_expiration = db.Column(db.DateTime)
     tasks = db.relationship('Task', backref='user', lazy='dynamic')
 
-    def __repr__(self):
-        return f'<User {self.username}>'
-
-    # def set_password(self, password):
-    #     self.password_hash = generate_password_hash(password)
-    #
-    # def check_password(self, password):
-    #     return check_password_hash(self.password_hash, password)
+    def __init__(self, email, password):
+        self.email = email
+        self.password = bcrypt \
+            .generate_password_hash(password, current_app.config.get('BCRYPT_LOG_ROUNDS')) \
+            .decode()
+        self.registered_on = datetime.now()
 
     def avatar(self, size):
         digest = md5(self.email.lower().encode('utf-8')).hexdigest()
@@ -65,82 +60,54 @@ class User(UserMixin, db.Model):
         return Task.query.filter_by(name=name, user=self,
                                     complete=False).first()
 
-    def to_dict(self, include_email=False):
-        data = {
-            'id': self.id,
-            'username': self.username,
-            'last_seen': self.last_seen.isoformat() + 'Z',
-            'track_count': self.tracks.count(),
-            'follower_count': self.followers.count(),
-            'followed_count': self.followed.count(),
-            '_links': {
-                'self': url_for('api.get_user', id=self.id),
-                'avatar': self.avatar(128)
-            }
-        }
-        if include_email:
-            data['email'] = self.email
-        return data
-
-    def from_dict(self, data, new_user=False):
-        for field in ['username', 'email', 'about_me']:
-            if field in data:
-                setattr(self, field, data[field])
-        if new_user and 'password' in data:
-            self.set_password(data['password'])
-
-    # def get_token(self, expires_in=3600):
-    #     now = datetime.utcnow()
-    #     if self.token and self.token_expiration > now + timedelta(seconds=60):
-    #         return self.token
-    #     self.token = base64.b64encode(os.urandom(24)).decode('utf-8')
-    #     self.token_expiration = now + timedelta(seconds=expires_in)
-    #     db.session.add(self)
-    #     return self.token
-    #
-    # def revoke_token(self):
-    #     self.token_expiration = datetime.utcnow() - timedelta(seconds=1)
+    # def encode_auth_token(self, user_id):
+    #     try:
+    #         payload = {
+    #             'exp': datetime.utcnow() + timedelta(days=0, seconds=5),
+    #             'iat': datetime.utcnow(),
+    #             'sub': user_id
+    #         }
+    #         return jwt.encode(
+    #             payload,
+    #             current_app.config.get('SECRET_KEY'),
+    #             algorithm='HS256'
+    #         )
+    #     except Exception as e:
+    #         return e
     #
     # @staticmethod
-    # def check_token(token):
-    #     user = User.query.filter_by(token=token).first()
-    #     if user is None or user.token_expiration < datetime.utcnow():
-    #         return None
-    #     return user
+    # def decode_auth_token(auth_token):
+    #     try:
+    #         payload = jwt.decode(auth_token, current_app.config.get('SECRET_KEY'))
+    #         # is_blacklisted_token = BlacklistToken.check_blacklist(auth_token)
+    #         # if is_blacklisted_token:
+    #         #     return 'Token blacklisted. Please log in again.'
+    #         # else:
+    #         return payload['sub']
+    #     except jwt.ExpiredSignatureError:
+    #         return 'Signature expired. Please log in again.'
+    #     except jwt.InvalidTokenError:
+    #         return 'Invalid token. Please log in again.'
 
-    def encode_auth_token(self, user_id):
-        try:
-            payload = {
-                'exp': datetime.utcnow() + timedelta(days=0, seconds=5),
-                'iat': datetime.utcnow(),
-                'sub': user_id
-            }
-            return jwt.encode(
-                payload,
-                current_app.config.get('SECRET_KEY'),
-                algorithm='HS256'
-            )
-        except Exception as e:
-            return e
+    def generate_auth_token(self, expiration=600):
+        s = Serializer(current_app.config['SECRET_KEY'], expires_in=expiration)
+        return s.dumps({'id': self.id})
 
     @staticmethod
-    def decode_auth_token(auth_token):
+    def verify_auth_token(token):
+        s = Serializer(current_app.config['SECRET_KEY'])
         try:
-            payload = jwt.decode(auth_token, current_app.config.get('SECRET_KEY'))
-            return payload['sub']
-        except jwt.ExpiredSignatureError:
-            return 'Signature expired. Please log in again.'
-        except jwt.InvalidTokenError:
-            return 'Invalid token. Please log in again.'
-
-
-@login.user_loader
-def load_user(id):
-    return User.query.get(int(id))
+            data = s.loads(token)
+            print('data', data)
+        except SignatureExpired:
+            return None  # valid token, but expired
+        except BadSignature:
+            return None  # invalid token
+        user = User.query.get(data['id'])
+        return user
 
 
 class Track(db.Model):
-    __searchable__ = ['title']
     id = db.Column(db.Integer, primary_key=True)
     number = db.Column(db.String(30))
     timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
@@ -149,9 +116,6 @@ class Track(db.Model):
     image_url = db.Column(db.String(200))
     events = db.relationship('Event', backref='track', lazy='dynamic')
     is_archived = db.Column(db.Integer, default=0)
-
-    def __repr__(self):
-        return f'<Track {self.number} {self.title}>'
 
     def serialize(self):
         return {
