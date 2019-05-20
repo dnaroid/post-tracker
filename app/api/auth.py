@@ -2,6 +2,7 @@ from flask import g, request
 from flask_restful import Resource
 
 from app import auth, bcrypt, db
+from app.helpers.auth_helper import get_token
 from app.models import User
 
 
@@ -12,7 +13,7 @@ def verify_password(username_or_token, password):
         if auth_header:
             try:
                 auth_token = auth_header.split(" ")[1]
-                user = User.verify_auth_token(auth_token)
+                user = User.get_by_token(auth_token)
                 if user is None:
                     return False
                 g.user = user
@@ -29,29 +30,19 @@ class RegisterAPI(Resource):
             try:
                 user = User(
                     email=post_data.get('email'),
-                    password=post_data.get('password')
-                )
+                    password=post_data.get('password'))
                 db.session.add(user)
                 db.session.commit()
                 auth_token = user.generate_auth_token()
-                responseObject = {
-                    'status': 'success',
-                    'message': 'Successfully registered.',
-                    'auth_token': auth_token.decode()
-                }
-                return responseObject, 201
+                return {'status': 'success',
+                        'message': 'Successfully registered.',
+                        'token': auth_token.decode()}, 201
             except Exception as e:
-                responseObject = {
-                    'status': 'fail',
-                    'message': 'Some error occurred. Please try again.'
-                }
-                return responseObject, 401
+                return {'status': 'fail',
+                        'message': 'Some error occurred. Please try again.'}, 401
         else:
-            responseObject = {
-                'status': 'fail',
-                'message': 'User already exists. Please Log in.',
-            }
-            return responseObject, 202
+            return {'status': 'fail',
+                    'message': 'User already exists. Please Log in.'}, 202
 
 
 class LoginAPI(Resource):
@@ -61,63 +52,47 @@ class LoginAPI(Resource):
             user = User.query.filter_by(email=post_data.get('email')).first()
             if user and bcrypt.check_password_hash(user.password, post_data.get('password')):
                 auth_token = user.generate_auth_token()
-                if auth_token:
-                    responseObject = {
-                        'status': 'success',
+                return {'status': 'success',
                         'message': 'Successfully logged in.',
-                        'auth_token': auth_token.decode()
-                    }
-                    return responseObject, 200
+                        'token': auth_token.decode()}, 200
             else:
-                responseObject = {
-                    'status': 'fail',
-                    'message': 'User does not exist.'
-                }
-                return responseObject, 404
+                return {'status': 'fail',
+                        'message': 'User does not exist.'}, 404
         except Exception as e:
-            responseObject = {
-                'status': 'fail',
-                'message': 'Try again'
-            }
-            return responseObject, 500
+            return {'status': 'fail',
+                    'message': 'Try again'}, 500
 
 
 class LogoutAPI(Resource):
     def post(self):
-        auth_header = request.headers.get('Authorization')
-        if auth_header:
-            auth_token = auth_header.split(" ")[1]
-        else:
-            auth_token = ''
+        # insert the token
+        # db.session.add(blacklist_token)
+        # db.session.commit()
+        auth_token = get_token()
         if auth_token:
-            resp = User.verify_auth_token(auth_token)
-            if not isinstance(resp, str):
-                # mark the token as blacklisted
-                # blacklist_token = BlacklistToken(token=auth_token)
-                try:
-                    # insert the token
-                    # db.session.add(blacklist_token)
-                    # db.session.commit()
-                    responseObject = {
-                        'status': 'success',
-                        'message': 'Successfully logged out.'
-                    }
-                    return responseObject, 200
-                except Exception as e:
-                    responseObject = {
-                        'status': 'fail',
-                        'message': e
-                    }
-                    return responseObject, 200
+            user = User.get_by_token(auth_token)
+            if not user:
+                return {'status': 'fail',
+                        'data': {
+                            'message': 'Invalid auth token.'}}, 401
             else:
-                responseObject = {
-                    'status': 'fail',
-                    'message': resp
-                }
-                return responseObject, 401
-        else:
-            responseObject = {
-                'status': 'fail',
-                'message': 'Provide a valid auth token.'
-            }
-            return responseObject, 403
+                return {'status': 'success',
+                        'data': {
+                            'user_id': user.id,
+                            'email': user.email}}, 200
+
+
+class StatusAPI(Resource):
+    def get(self):
+        auth_token = get_token()
+        if auth_token:
+            user = User.get_by_token(auth_token)
+            if not user:
+                return {'status': 'fail',
+                        'data': {
+                            'message': 'Invalid auth token.'}}, 401
+            else:
+                return {'status': 'success',
+                        'data': {
+                            'user_id': user.id,
+                            'email': user.email}}, 200

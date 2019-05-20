@@ -12,7 +12,7 @@ from app import bcrypt, db
 
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(64), index=True, unique=True)
+    username = db.Column(db.String(64), unique=True)
     email = db.Column(db.String(120), index=True, unique=True)
     password = db.Column(db.String(128))
     tracks = db.relationship('Track', backref='owner', lazy='dynamic')
@@ -60,45 +60,15 @@ class User(UserMixin, db.Model):
         return Task.query.filter_by(name=name, user=self,
                                     complete=False).first()
 
-    # def encode_auth_token(self, user_id):
-    #     try:
-    #         payload = {
-    #             'exp': datetime.utcnow() + timedelta(days=0, seconds=5),
-    #             'iat': datetime.utcnow(),
-    #             'sub': user_id
-    #         }
-    #         return jwt.encode(
-    #             payload,
-    #             current_app.config.get('SECRET_KEY'),
-    #             algorithm='HS256'
-    #         )
-    #     except Exception as e:
-    #         return e
-    #
-    # @staticmethod
-    # def decode_auth_token(auth_token):
-    #     try:
-    #         payload = jwt.decode(auth_token, current_app.config.get('SECRET_KEY'))
-    #         # is_blacklisted_token = BlacklistToken.check_blacklist(auth_token)
-    #         # if is_blacklisted_token:
-    #         #     return 'Token blacklisted. Please log in again.'
-    #         # else:
-    #         return payload['sub']
-    #     except jwt.ExpiredSignatureError:
-    #         return 'Signature expired. Please log in again.'
-    #     except jwt.InvalidTokenError:
-    #         return 'Invalid token. Please log in again.'
-
-    def generate_auth_token(self, expiration=600):
+    def generate_auth_token(self, expiration=6000):
         s = Serializer(current_app.config['SECRET_KEY'], expires_in=expiration)
         return s.dumps({'id': self.id})
 
     @staticmethod
-    def verify_auth_token(token):
+    def get_by_token(token):
         s = Serializer(current_app.config['SECRET_KEY'])
         try:
             data = s.loads(token)
-            print('data', data)
         except SignatureExpired:
             return None  # valid token, but expired
         except BadSignature:

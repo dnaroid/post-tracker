@@ -1,7 +1,7 @@
 from flask import Blueprint
 from flask_restful import Api
 
-from app.api.auth import LoginAPI, LogoutAPI, RegisterAPI
+from app.api.auth import LoginAPI, LogoutAPI, RegisterAPI, StatusAPI
 from app.api.track import TrackAPI, TracksAPI
 
 bp = Blueprint('api', __name__)
@@ -13,3 +13,4 @@ api.add_resource(TrackAPI, '/track/<string:number>')
 api.add_resource(RegisterAPI, '/register')
 api.add_resource(LoginAPI, '/login')
 api.add_resource(LogoutAPI, '/logout')
+api.add_resource(StatusAPI, '/status')
