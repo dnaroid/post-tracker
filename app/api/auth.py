@@ -96,3 +96,7 @@ class StatusAPI(Resource):
                         'data': {
                             'user_id': user.id,
                             'email': user.email}}, 200
+        else:
+            return {'status': 'fail',
+                    'data': {
+                        'message': 'Invalid auth token.'}}, 401
