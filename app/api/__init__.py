@@ -8,7 +8,7 @@ bp = Blueprint('api', __name__)
 api = Api(bp)
 
 api.add_resource(TracksAPI, '/tracks')
-api.add_resource(TrackAPI, '/track/<string:number>')
+api.add_resource(TrackAPI, '/track/<string:id>')
 api.add_resource(TrackNewAPI, '/track')
 
 api.add_resource(RegisterAPI, '/register')
