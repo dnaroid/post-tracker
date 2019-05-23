@@ -1,7 +1,7 @@
-from flask import g
+from flask import g, request
 from flask_restful import Resource
 
-from app import auth
+from app import auth, db
 from app.helpers.react_helper import as_json
 from app.models import Track
 
@@ -11,7 +11,7 @@ class TracksAPI(Resource):
 
     def get(self):
         tracks = g.user.tracks.all()
-        return as_json(tracks), 200
+        return {'data': as_json(tracks)}, 200
 
 
 class TrackAPI(Resource):
@@ -23,24 +23,20 @@ class TrackAPI(Resource):
             return {'error': 'not found'}, 404
         return as_json(track), 200
 
-    # def post(self):
-    #     json_data = request.get_json(force=True)
-    #     if not json_data:
-    #         return {'message': 'No input data provided'}, 400
-    #     # Validate and deserialize input
-    #     data, errors = comment_schema.load(json_data)
-    #     if errors:
-    #         return {"status": "error", "data": errors}, 422
-    #     category_id = Category.query.filter_by(id=data['category_id']).first()
-    #     if not category_id:
-    #         return {'status': 'error', 'message': 'comment category not found'}, 400
-    #     comment = Comment(
-    #         category_id=data['category_id'],
-    #         comment=data['comment']
-    #     )
-    #     db.session.add(comment)
-    #     db.session.commit()
-    #
-    #     result = comment_schema.dump(comment).data
-    #
-    #     return {'status': "success", 'data': result}, 201
+
+class TrackNewAPI(Resource):
+    decorators = [auth.login_required]
+
+    def post(self):
+        data = request.get_json(force=True)
+        if not data:
+            return {'message': 'No input data provided'}, 400
+        track = Track(
+            user_id=g.user.id,
+            number=data['number'],
+            title=data['title']
+        )
+        db.session.add(track)
+        db.session.commit()
+
+        return as_json(track), 200
