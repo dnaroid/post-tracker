@@ -14,7 +14,7 @@ Flask-Moment==0.5.2
 Flask-SQLAlchemy==2.3.2
 Flask-WTF==0.14.2
 idna==2.6
-lxml==4.3.3
+lxml==4.6.3
 itsdangerous==0.24
 Jinja2==2.10
 Mako==1.0.7
